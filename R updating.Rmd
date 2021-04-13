@@ -1,0 +1,34 @@
+---
+title: "R updating"
+author: "P-value Data Analytics"
+date: "3/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For updating the R software first install the package "installr" by Tal Galili.
+
+The installation can be conducted using the Rstudio with the command **install.packages()**.
+
+```{r}
+#install.packages(installr).
+```
+
+
+Exit the Rstudio and open the newest R software on your computer (e.g. R x64 4.0.3).
+At the basic R IDE, load the **installr** package using the **library** command.
+```{r}
+library(installr)
+```
+
+Execute the command **installr()** and follow the instructions. 
+```{r}
+# installr()
+```
+
+You can check for available Rstudio update using the Tab **Help** -> **Check for updates**. 
+The updating process is by installing Rstudio manually again from [this website](https://rstudio.com/products/rstudio/download/#download).
+
