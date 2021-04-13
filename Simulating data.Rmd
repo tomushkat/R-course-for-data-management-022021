@@ -1,0 +1,66 @@
+---
+title: "Simulating data"
+author: "P-Value"
+date: "2/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+set.seed(1)
+ID <- c(1:500)
+Month <- c(rep('Jenuary', 500), rep('February', 500), rep('March', 500))
+# Gender <- c(rep('Male', 250), rep('Female', 250))
+Gender <- c(rep('Male', 250), rep('Female', 250))
+
+Age <- round(rnorm(500, 40, 20), 2)
+Age <- ifelse(Age < 10, 10, Age)
+
+Education <- sample(x = c('PhD', 'BA', 'MA'), size = 500, prob = c(0.1, 0.3, 0.6), replace = TRUE)
+
+monthlyGameEntry1 <- round(c(rnorm(250, 50, 10), rnorm(250, 40, 10)))
+monthlyGameEntry2 <- round(monthlyGameEntry1 * runif(1, min = 0.8, max = 1.2))
+monthlyGameEntry3 <- round(monthlyGameEntry2 * runif(1, min = 0.8, max = 1.2))
+monthlyGameEntry <- c(monthlyGameEntry1, monthlyGameEntry2, monthlyGameEntry3) # C
+
+Purchase <- round(rnorm(500, 6, 2))
+Purchase <- ifelse(Purchase < 0, 0, Purchase)
+
+Stage1 <- sample(c(1:9), size = 500, replace = T, prob = c(0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.05, 0.025, 0.025))
+Stage2 <- Stage1 + sample(c(0, 1), 1, replace = T)
+Stage3 <- Stage2 + sample(c(0, 1), 1, replace = T)
+Stage <- c(Stage1, Stage2, Stage3) # C
+
+Score1 <- round(rnorm(500, 50, 10))
+Score2 <- round(c(Score1[1:250] * runif(n = 1, min = 1, max = 2), Score1[1:250] * runif(n = 1, min = 1, max = 1.25)))
+Score3 <- round(Score2 * runif(n = 1, min = 1, max = 1.2))
+Score <- c(Score1, Score2, Score3) # C
+
+Data <- data.frame(ID, Month, Gender, Age, Education, monthlyGameEntry, Purchase, Stage, Score)
+data <- c()
+set.seed(1)
+for (i in 1:nrow(Data)){
+  vector <- Data[i, ]
+  vector$Education <- ifelse(vector$Age <= 18, 'Pupil',
+                       ifelse(vector$Age <= 21, 'Soilder', vector$Education))
+  vector$monthlyGameEntry <- round(ifelse(vector$Education == 'Pupil', rnorm(1, 100, 10),
+                                    ifelse(vector$Education == 'PhD', rnorm(1, 10, 1), vector$monthlyGameEntry)))
+  vector$Purchase <- round(ifelse(vector$Education == 'Pupil', rnorm(1, 10, 2),
+                            ifelse(vector$Education == 'MA', rnorm(1, 4, 1), vector$Purchase)))
+  vector$monthlyIncome <- round(ifelse(vector$Education == 'Pupil', NA,
+                          ifelse(vector$Education == 'Soilder', rnorm(1, 1000, 100),
+                                 ifelse(vector$Education == 'BA', rnorm(1, 8000, 500),
+                                        ifelse(vector$Education == 'MA', rnorm(1, 14000, 1000),
+                                        ifelse(vector$Education == 'PhD', 12000, 1000))))), 2)
+  data <- rbind(data, vector)
+
+}
+  data$Age <- ifelse(data$Education == 'PhD', data$Age + 10, data$Age) 
+
+
+write.csv(data, 'Data.csv')
+```
+
