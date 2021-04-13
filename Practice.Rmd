@@ -1,0 +1,42 @@
+---
+title: "Practice"
+author: "P-value Data Analytics"
+date: "3/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+1) Produce a scaled (z-score) and a non-scaled histograms of the variable 'Purchase'
+ - Upload the tidyverse package
+ - Load the data Data.csv from your computer and store them inside the variable 'myData'
+
+2) Create a new data set called cleanData that that is without the outliers of the variable 'Purchase'.
+Use the 'continuousOutliers' function
+
+```{r, warning=FALSE, message=FALSE}
+
+continuousOutliers <- function(data, lowerBound = 3, upperBpund = 3){
+  
+  # This function takes a vector, and replace observations that are smaller or bigger than the lower/upper bounds * standard deviations with NA
+  
+  Mean   <- mean(data, na.rm = TRUE)
+  SD     <- sd(data, na.rm = TRUE)
+  High   <- Mean + upperBound * SD # Upper Range  
+  Low    <- Mean - lowerBound * SD # Lower Range
+  Final  <- ifelse(data > High | data < Low, NA, data)
+  return(Final)
+  
+}
+```
+
+
+5) Is there a difference between males and females in the amount of Purchase in February?
+Use independent samples t-test.
+
+
+6) Are there differences in the observations' scores between January and March? Examine the differences by gender separately.
+Use paired samples t-tests.
+
