@@ -1,0 +1,32 @@
+---
+title: "K-means"
+author: "P-value Data Analytics"
+date: "4/13/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Goal - Assessing the multivariante correlation between ltv and (1) single and (2) multiple variables  
+
+# Libraries
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, lmtest, estimatr, skimr, faraway, apaTables)
+```
+
+
+# Uploading a data set from the Git Hub
+
+1) Go to the GitHub repository link where you have the CSV file.
+2) Click on the **raw** option present on the top right of the data.
+3) This will open a new window in the browser.
+4) The link should be like **https://raw.githubusercontent.com/..**.
+5) You have to use this link to download csv file from Github.
+
+```{r, warning=FALSE, message=FALSE}
+URL <- c('https://raw.githubusercontent.com/tomushkat/R-course-for-data-management-022021/main/Smart%20segmentation%20values%20DATA%20240321.csv')
+dataGit <- read_csv(url(URL))
+```

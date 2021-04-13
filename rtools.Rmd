@@ -1,0 +1,36 @@
+---
+title: "R, RStudio, rtools40 installations"
+author: "P-value Data Analitics"
+date: "2/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# R 
+
+Go to [this website](https://cran.r-project.org/mirrors.html), and choose your country. If your country does not appear, choose the **0-Cloud** option - "https://cloud.r-project.org/".
+
+On the next page choose the compatible operating system, and then choose **"install R for the first time."** which appears in the first line.
+
+Choose **"Download R 4.0.4 for Windows"** (or other) and install the program.
+
+# RStudio
+
+Go to [this website](https://rstudio.com/products/rstudio/download/#download), choose your preferred operating system and the most basic (and free) version of Rstudio, and install the program.
+
+# If you use Windows operating system you should also install the rtools40
+## 1) Download the program
+
+Go to [this website](https://cran.r-project.org/bin/windows/Rtools/).
+
+## 2) Install the program
+
+Choose the **"rtools40-x86_64.exe"** or the **"rtools40-i686.exe"**
+
+## 3) Finish installation
+
+Follow the instructions under the title **"Putting Rtools on the PATH"** [here](https://cran.r-project.org/bin/windows/Rtools/).
+
