@@ -1,0 +1,171 @@
+---
+title: "Paired samples t-test and Wilcoxon test"
+author: "P-Value Data Analytics"
+date: "3/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)   # Do not run
+```
+
+# Goal - to compare between January and February at the customers' scores
+
+# Libraries
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, effectsize)
+```
+
+## From the Git Hub
+
+1) Go to the GitHub repository link where you have the CSV file.
+2) Click on the **raw** option present on the top right of the data.
+3) This will open a new window in the browser.
+4) The link should be like **https://raw.githubusercontent.com/..**.
+5) You have to use this link to download csv file from Github.
+
+```{r, warning=FALSE, message=FALSE}
+URL <- c('https://raw.githubusercontent.com/tomushkat/R-course-for-data-management-022021/main/Data.csv')
+dataGit <- read_csv(url(URL))
+```
+
+
+# Pre test descriptive statistics and visualization
+
+First we filter out from the data set the observations from March using the **filter** command.   
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth <- dataGit %>% 
+  filter(Month == 'January' | Month == 'February')
+```
+
+If the data is not organized you should first organize it.
+The **paired** command has to be **TRUE**
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth2 <- dataMonth %>%
+  arrange(Stage, desc(Purchase))    # Example of arranging the data set by the number of stage and the number of the purchase
+head(dataMonth2, 10)
+
+head(dataMonth$Score[dataMonth$Month == 'January']) - head(dataMonth$Score[dataMonth$Month == 'February']) # This is what the paired t test command does
+
+dataMonth <- dataMonth %>%
+  arrange(ID)   # arranging the data by ID
+
+removeSingles <- function(data, varString, N){
+  
+  # This function removes rows from the data set that their target variable does not repeat N time.
+  # The function get the (1) data set, (2) the name of the variables as a string/character, and (3) the number of correct repetitions
+  
+  require(tidyverse)
+
+  
+  dataSet <- as.data.frame(table(data[, varString]))
+  dataSet <- dataSet %>% 
+    mutate(Logical = ifelse(Freq == N, 1, 0))
+  dimnames(dataSet)[[2]] <- c(varString, 'Freq', 'Logical' )
+  data1 <- merge(data, dataSet, by = varString, all = TRUE)
+  data2 <- data1 %>%
+    filter(Logical > 0) %>% 
+    mutate(Freq = NULL,
+           Logical = NULL)
+  
+   return(data2)
+}
+
+cleanData <- removeSingles(dataMonth, 'ID', 2)
+```
+
+## Do not forget to examine the dependent and independent variables, remove outliers, and test the normality of the observations. 
+
+
+# Hypothesis testing - Paired samples t-test
+## Descriptive statistics
+Using the **drop_na**, **group_by** and **summarise** we can perform descriptive statistics for the scores by months.
+```{r, warning=FALSE, message=FALSE}
+cleanData %>% 
+  drop_na(Score, Month) %>% 
+  group_by(Month) %>% 
+  summarise(Mean = round(mean(Score), 2),
+            SD   = round(sd(Score), 2),
+            N    = length(Score))
+```
+
+
+### Visualization
+The visualization is using the **ggplot** function. 
+ggplot(aes(x = independentVariable, y = dependentVariable)).
+
+The **geom_bar** command indicates for painting meaned bars. 
+The **geom_jitter** command indicates for painting an estimated location of the cases.
+The first **stat_summary** command add a dot in the center of the bars.
+The second **stat_summary** command add the standard deviations in the center of the bars.
+The **scale_fill_manual** paints manually the bars.
+The **theme_classic** contains several esthetics commands.
+The **ylab** command indicates the Y-lab title.
+The **ggtitle** command indicates the title.
+The **theme(plot.title = element_text(hjust =** command center the title.
+
+```{r, warning=FALSE, message=FALSE}
+cleanData %>% 
+  ggplot(aes(x = Month, y = Score, fill = Month)) + 
+    geom_bar(stat = 'summary', position = position_dodge()) +
+    geom_jitter(color = 'blue') + 
+   stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    scale_fill_manual(values = c('black', 'lightgray')) +
+    theme_classic() + ylab('Score') +
+    ggtitle('Paired samples t-test: Score by Month') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+## Paired samples t test
+
+The t-test is conducted using the t.test command.
+the formula is $January - February$. Using the brackets we exclude the observations that do not compatible with the condition.
+
+```{r, warning=FALSE, message=FALSE}
+Model <- t.test(cleanData$Score[cleanData$Month == 'January'],
+       cleanData$Score[cleanData$Month == 'February'],
+       paired = TRUE)   
+Model
+```
+
+## Effect size - Cohen's d
+The effect size is calculated using the **effectsize** command from the package **effectsize**. Indicating the type is not mandatory.
+```{r, warning=FALSE, message=FALSE}
+effectsize(Model, type = 'cohens_d')
+```
+
+
+## Wilcoxon test
+```{r, warning=FALSE, message=FALSE}
+wilcox.test(cleanData$Score[cleanData$Month == 'January'],
+       cleanData$Score[cleanData$Month == 'February'],
+       paired = TRUE)   
+```
+
+## Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+cleanData %>% 
+  drop_na(Score, Month) %>% 
+  group_by(Month) %>% 
+  summarise(Median = round(median(Score), 2),
+            N      = length(Score))
+```
+
+## Visualization
+```{r, warning=FALSE, message=FALSE}
+cleanData %>% 
+  ggplot(aes(x = Month, y = Score, fill = Month)) + 
+    geom_boxplot(color = 'red', outlier.shape = NA) +
+    geom_jitter(aes(x = Month, y = Score, fill = Month), color = 'blue', alpha = 0.2) +
+    scale_fill_manual(values = c('black', 'lightgray')) +
+    theme_classic() + ylab('Score') +
+    ggtitle('Wilcoxon test box plot: Score by month') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+
+

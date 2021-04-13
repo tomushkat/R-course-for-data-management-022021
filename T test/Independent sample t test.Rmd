@@ -1,0 +1,275 @@
+---
+title: "Independent samples t test and Mann-Whitney test"
+author: "P-value Data Analytics"
+date: "3/15/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)   # Do not run
+```
+
+
+# Goal - to compare between males and females by monthly game entries
+
+# Libraries
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, skimr, car, effectsize)
+```
+
+
+# Uploading a data set
+## From the computer
+```{r, warning=FALSE, message=FALSE}
+Data <- read_csv('C:\\Tom\\pvalue\\2021\\2\\R course for data management 022021\\Data.csv')
+```
+
+  
+## From the Git Hub
+
+1) Go to the GitHub repository link where you have the CSV file.
+2) Click on the **raw** option present on the top right of the data.
+3) This will open a new window in the browser.
+4) The link should be like **https://raw.githubusercontent.com/..**.
+5) You have to use this link to download csv file from Github.
+
+```{r, warning=FALSE, message=FALSE}
+URL <- c('https://raw.githubusercontent.com/tomushkat/R-course-for-data-management-pvalue/main/Data.csv')
+dataGit <- read_csv(url(URL))
+```
+
+## From the Google Drive
+
+1) Go to 'File'
+2) Go to 'Publish to the web'
+3) Under 'Link' change to the target sheet
+4) Change to 'Comma-separated values (.csv)'
+5) Choose 'Publish' and confirm
+6) Copy the URL
+
+```{r, warning=FALSE, message=FALSE}
+urlData <- c('https://docs.google.com/spreadsheets/d/e/2PACX-1vT3jiyLqz265ejq7G0BvNyCZtAv4a8C4ADhkQ2YBPLvHTCELRB-4g_13_nsftxJU-QDCTfPdi3SSLNe/pub?gid=1570908824&single=true&output=csv')
+dataDrive <- read_csv(url(urlData))
+```
+
+
+ 
+# Pre test descriptive statistics and visualization
+
+## Grouping by ID 
+Since there are three months, we need to average the game entries (DV) into a single score for each ID.
+The **group_by** command unite the observations first by ID and then by gender. If the same ID had different genders (in different rows) there were a couple of groupings.
+
+
+The **drop_na** command removes all the rows that contain an NA. Always remember to remove NA in advance because although there are functions who ignore NA (**table**), there are functions who use NA even if you do not want to (e.g **length**) and functions that do not run if there is an NA observation (e.g **mean**).
+
+The command **summarise** indicates that we want to make a summarizing procedure, and the command **mean** averages the variable. 
+
+We assign the new data set to the variable dataMonth. If we want to have additional variables in the final data set, they need to be entered to the **group_by** command after Gender.
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth <- dataGit %>% 
+  group_by(ID, Gender) %>% 
+  drop_na(ID, Gender, monthlyGameEntry) %>% 
+  summarise(meanEntries = mean(monthlyGameEntry))
+
+head(dataMonth)
+```
+
+
+First of all, view your data set of interest -  dependent, and independent variables  
+
+## Independent variable - Gender
+Using the command **table** we can see how many cases we have by gender.
+The second line gives the percentages. We multiply the table results by 100 and divide by the number of observations. The **length** command counts the number of cases, and the **na.omit** command removes NA from the variable. The **round** command rounds the final results to 2 numbers after the decimal point. 
+
+```{r, warning=FALSE, message=FALSE}
+table(dataMonth$Gender)
+
+round(100 * table(dataMonth$Gender) / length(na.omit(dataMonth$Gender)), 2)
+```
+
+## Dependent variable - Monthly game entries
+Using the **group_by** and **skim** commands we can examine the data set by gender.
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  group_by(Gender) %>% 
+  skim()
+```
+
+## Visualization
+The visualization is using the **ggplot** 
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  ggplot(aes(x = Gender, y = meanEntries)) +
+  geom_boxplot() + theme_classic() + 
+  ylab('Monthly Game Entries') + ggtitle('Monthly Game Entries Box Plot') +
+  theme(plot.title = element_text(hjust = 0.5))
+  
+
+dataMonth %>% 
+  group_by(Gender) %>% 
+  mutate(meanEntries = scale(meanEntries)) %>% 
+  ggplot(aes(x = meanEntries)) + 
+    geom_histogram(fill = "grey", color = "red") +
+    facet_grid('Gender') + 
+    theme_classic() + 
+    xlab('Game enteries') + ylab('Frequency') +
+    ggtitle('Game enteries histogrames by gender') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+# Removing outliers
+
+Using the **continuousOutliers** command we exclude outliers separately by gender from the meanEntries.
+```{r, warning=FALSE, message=FALSE}
+continuousOutliers <- function(data, lowerBound = 3, upperBound = 3){
+  
+  # This function takes a vector, and replace observations that are smaller or bigger than the lower/upper bounds * standard deviations with NA
+  
+  Mean   <- mean(data, na.rm = TRUE)
+  SD     <- sd(data, na.rm = TRUE)
+  High   <- Mean + upperBound * SD # Upper Range  
+  Low    <- Mean - lowerBound * SD # Lower Range
+  Final  <- ifelse(data > High | data < Low, NA, data)
+  
+  return(Final)
+  
+}
+
+dataMonth <- dataMonth %>% 
+  drop_na(Gender, meanEntries) %>% 
+  group_by(Gender) %>% 
+  mutate(meanEntries = continuousOutliers(meanEntries))
+
+sum(is.na(dataMonth$meanEntries))  
+```
+
+### Descriptive statistics
+Now we can group the averaged (by ID) entries by gender using the **group_by** and produce an averages, standard deviations and Ns for each by gender. 
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  drop_na(Gender, meanEntries) %>% 
+  group_by(Gender) %>% 
+  summarise(Mean = round(mean(meanEntries), 2),
+            SD   = round(sd(meanEntries), 2),
+            N    = length(meanEntries))
+```
+
+### Visualization
+The visualization is using the **ggplot** function. It begins with:
+ggplot(aes(x = independentVariable, y = dependentVariable)).
+
+The **geom_bar** command indicates for painting the bars. 
+The **geom_jitter** command indicates for painting an estimated location of the cases.
+The first **stat_summary** command adds a dot in the center of the bars.
+The second **stat_summary** command adds the standard deviations in the center of the bars.
+The **scale_fill_manual** paints manually the bars.
+The **theme_classic** contains several aesthetic commands.
+The **ylab** command indicates the Y-lab title.
+The **ggtitle** command indicates the title.
+The **theme(plot.title = element_text(hjust =** command center the title.
+
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  ggplot(aes(x = Gender, y = meanEntries, fill = Gender)) + 
+    geom_bar(stat = 'summary', position = position_dodge()) +
+    geom_jitter(color = 'blue') + 
+   stat_summary(fun.data = mean_sdl, fun.args = list(mult = 1), 
+               geom = "errorbar", color = "red", width = 0.2) +
+    stat_summary(fun.y = mean, geom = "point", color = "red") +
+    scale_fill_manual(values = c('black', 'lightgray')) +
+    theme_classic() + ylab('Monthly game entery') +
+    ggtitle('Idependent samples t-test: Monthly Game Entry by Gender') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+# Hypothesis Testing - Independent samples t-test
+
+### Normality - Shapiro test
+
+The **shapiro.test** test the hypothesis that the variable's distribution is abnormal. Meaning, if the test's p-value is **Lower** than 0.05, then the distribution is ABNORMAL.
+
+```{r, warning=FALSE, message=FALSE}
+shapiro.test(dataMonth$meanEntries[dataMonth$Gender == 'Male'])
+shapiro.test(dataMonth$meanEntries[dataMonth$Gender == 'Female'])
+```
+
+If the Shapiro test results are significant we can try to do the test on the natural log values, using the **log** command. If the result is non-significant we should use the log values **only at the statistical test**.
+```{r, warning=FALSE, message=FALSE}
+shapiro.test(log(dataMonth$meanEntries[dataMonth$Gender == 'Male']))
+shapiro.test(log(dataMonth$meanEntries[dataMonth$Gender == 'Female']))
+```
+
+### Visualization
+For the qqplot, it is preferred to use the **qqPlot** command from the **car** package.  
+```{r, warning=FALSE, message=FALSE}
+qqPlot(dataMonth$meanEntries[dataMonth$Gender == 'Female'],
+       xlab = c("Quantiles"), ylab = c('Enteries'), main = c('Female game enteries qqplot'), 
+       col = "red", id = FALSE
+       )    # car library
+qqPlot(dataMonth$meanEntries[dataMonth$Gender == 'Male'],
+       xlab = c("Quantiles"), ylab = c('Enteries'), main = c('Male game enteries qqplot'), 
+       col = "red", id = FALSE
+       )    # car library
+```
+
+
+### Variances comparison - Leven test p-value greater than 0.05
+The var.test performs the Leven test. Using the **ifelse** function we assign the value TRUE if the test's results were not significant (the variances are assumed to be equal).
+
+```{r, warning=FALSE, message=FALSE}
+Leven <- var.test(meanEntries ~ Gender, data = dataMonth)
+Leven
+varLeven <- ifelse(Leven$p.value > 0.05, TRUE, FALSE)
+```
+
+## Independent samples t-test
+The t.test command executes a t-test. If paired = FALSE, the test is an independent samples test.
+Note: If we know that the difference should be a specific value, than change the **mu** parameter. 
+```{r, warning=FALSE, message=FALSE}
+Model <- t.test(meanEntries ~ Gender, paired = FALSE, mu = 0, var.equal = varLeven, data = dataMonth)   
+Model
+```
+### Note
+For comparing between measurement and known value, the comparison is against **mu**.
+```{r, warning=FALSE, message=FALSE}
+Model2 <- t.test(dataMonth$meanEntries, mu = 0)  
+Model2
+```
+
+### Effect size - Cohen's d
+The effect size is calculated using the **effectsize** command from the package **effectsize**. Indicating the type is not mandatory.
+```{r, warning=FALSE, message=FALSE}
+effectsize(Model, type = 'cohens_d')
+```
+
+
+## Mann-Whitney test
+```{r, warning=FALSE, message=FALSE}
+wilcox.test(meanEntries ~ Gender, paired = FALSE, data = dataMonth)   
+```
+
+### Descriptive statistics
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  drop_na(meanEntries, Gender) %>% 
+  group_by(Gender) %>% 
+  summarise(Median = round(median(meanEntries), 2),
+            N      = length(meanEntries))
+```
+
+### Visualization
+```{r, warning=FALSE, message=FALSE}
+dataMonth %>% 
+  ggplot(aes(x = Gender, y = meanEntries, fill = Gender)) + 
+    geom_boxplot(color = 'red', outlier.shape = NA) +
+    geom_jitter(aes(x = Gender, y = meanEntries, fill = Gender), color = 'blue', alpha = 0.2) +
+    scale_fill_manual(values = c('black', 'lightgray')) +
+    theme_classic() + ylab('Monthly game entery') +
+    ggtitle('Mann-Whitney test box plot: Monthly Game Entry by Gender') + theme(plot.title = element_text(hjust = 0.5)) 
+```
+
+
+
+
