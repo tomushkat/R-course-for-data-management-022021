@@ -1,0 +1,146 @@
+---
+title: "Correlations"
+author: "P-value Data Analytics"
+date: "3/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Goal:
+## To assess the correlation between users' scores in January and February using Pearson correlation.
+
+# Libraries
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse, gmodels, effectsize, apaTables)
+```
+
+## From the Git Hub
+
+1) Go to the GitHub repository link where you have the CSV file.
+2) Click on the **raw** option present on the top right of the data.
+3) This will open a new window in the browser.
+4) The link should be like **https://raw.githubusercontent.com/..**.
+5) You have to use this link to download csv file from Github.
+
+```{r, warning=FALSE, message=FALSE}
+URL <- c('https://raw.githubusercontent.com/tomushkat/R-course-for-data-management-022021/main/anovaData.csv')
+dataGit <- read_csv(url(URL))
+```
+
+# Pearson correlation test
+
+The correlation test is conducted using the **cor.test** command.
+The method should be **pearson**.
+```{r, warning=FALSE, message=FALSE}
+Model <- cor.test(dataGit$Score[dataGit$Month == 'January'],
+       dataGit$Score[dataGit$Month == 'February'],
+       method = c('pearson'))
+Model
+```
+
+## Effect size - R^2
+The effect size is the $R^2$.
+The **past0** command is for concatenating strings and numeric.
+```{r, warning=FALSE, message=FALSE}
+paste0(round(100 * Model$estimate ^ 2, 2), "%")
+```
+
+## Visualization
+
+For the Visualization we first need to convert the data set tables from a long format to a short format. This is contacted using the **pivot_wider** command after we filtered only the months we want to explore and selected only the relevant variables. 
+
+In the **ggplot** command:
+1) Row 69 indicates the structure of the figure.
+2) Row 70 indicates the the observations should be painted as points.
+3) Row 71 indicates that there will be a line, and the **method* command indicated that the line will be linear.
+4) Rows 72-75  are for aesthetics and headlines.
+
+```{r, warning=FALSE, message=FALSE}
+df_wide <- dataGit %>%
+  filter(Month != 'March') %>% 
+  select(ID, Month, Score) %>%
+  pivot_wider(names_from = Month, values_from = Score, names_prefix = "time")
+
+
+df_wide %>%
+  ggplot(aes(x = timeJanuary, y = timeFebruary)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  theme_classic() +
+  ylab('Score in January') + xlab('Score in February') +
+  ggtitle('Pearson correlation: Score by months Jrnuary and February') + theme(plot.title = element_text(hjust = 0.5))
+```
+
+## Correlation matrix - for several correlations at once
+
+```{r, warning=FALSE, message=FALSE}
+tableData <- dataGit %>% 
+  filter(Month == 'February') %>% 
+  select(monthlyGameEntry, Score, Purchase, Stage)
+
+apa.cor.table(tableData)
+```
+
+# Spearman correlation test
+For Spearman correlation change the method to 'spearman'.
+## Correlation test
+```{r, warning=FALSE, message=FALSE}
+cor.test(dataGit$Score[dataGit$Month == 'January'],
+       dataGit$Score[dataGit$Month == 'February'],
+       method = c('spearman'))
+```
+
+
+# Chi square test
+## 2 X 2
+
+Uniting the education levels using the **mutate** and **ifelse** commands and reordering their values using the **ordered** command. 
+
+## Data preperation
+```{r, warning=FALSE, message=FALSE}
+data1 <- dataGit %>% 
+  filter(Month == 'March') %>% 
+  mutate(Education1 = ifelse(is.na(Education), Education,
+                            ifelse(Education == 'Pupil' | Education =='Soldier', 'nonAcademic', 'Academic')),
+         Education1 = ordered(Education1, levels = c("nonAcademic", "Academic")))
+
+```
+
+### Visualization
+
+The first row of the ggplot command paint the structure of the figure. 
+The second row paint the bars and summaries the data for percentage.
+The third and forth rows summaries and paint the text on top of the bars.
+The fifth row paint the bars with the colors for the education.
+The six row split the figure by gender.
+The last row transform the Y-axis from decimal number to percent.
+```{r, warning=FALSE, message=FALSE}
+   data1 %>%
+  ggplot(aes(x = Education1, group = Gender)) + 
+    geom_bar(aes(y = ..prop.., fill = factor(..x..)), stat = "count") +
+    geom_text(aes( label = scales::percent(..prop..),
+                   y = ..prop.. ), stat= "count", vjust = -.5) +
+    labs(y = "Percent", fill = "Education1") +
+    facet_grid(~Gender) + theme_classic() + xlab('Education level') +
+    scale_y_continuous(labels = scales::percent) 
+  
+
+```
+
+### Chi-Square test
+The chi-square calculation and table is using the **crossTable** command from the **gmodels** package.
+```{r, warning=FALSE, message=FALSE}
+CrossTable(data1$Education1, data1$Gender, chisq = T, format = 'SPSS')  # gmodels package
+```
+
+For assessing the effect size, first the model should be conducted using the base R function **chisq.test**, and than to use the command **effectsize**.
+### Effect size - phi
+```{r, warning=FALSE, message=FALSE}
+Model <- chisq.test(data1$Education1, data1$Gender)
+
+effectsize(Model, type  = 'cramers_v')
+```
+
