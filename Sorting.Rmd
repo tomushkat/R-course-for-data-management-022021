@@ -1,0 +1,79 @@
+---
+title: "Sorting"
+author: "P-value Data Analytics"
+date: "4/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, message=FALSE}
+pacman::p_load(tidyverse)
+```
+
+```{r, warning=FALSE, message=FALSE}
+URL <- c('https://raw.githubusercontent.com/tomushkat/R-course-for-data-management-022021/main/Smart%20segmentation%20values%20DATA%20240321.csv')
+dataGit <- read_csv(url(URL))
+```
+
+
+
+# Arranging the data set by:
+
+## The value of the group
+
+```{r, warning=FALSE, message=FALSE}
+data1 <- dataGit %>%
+  drop_na(cz_group) %>% 
+  arrange(cz_group)
+
+head(data1)
+tail(data1)
+  
+```
+
+## The size of the group
+```{r, warning=FALSE, message=FALSE}
+data2 <- dataGit %>%
+  drop_na(cz_group) %>% 
+  group_by(cz_group) %>% 
+  mutate(N = length(cz_group)) %>% 
+  arrange(N)
+
+
+head(data2)
+tail(data2)
+```
+
+# Arranging the summarized data set by:
+
+## The value of the group (descending order)
+```{r, warning=FALSE, message=FALSE}
+data3 <- dataGit %>%
+  drop_na(cz_group, bet_habit) %>% 
+  group_by(cz_group) %>% 
+  summarise(Mean = round(mean(bet_habit), 2),
+            SD   = round(sd(bet_habit), 2),
+            N    = length(bet_habit)) %>% 
+  arrange(desc(cz_group))
+
+head(data3)
+tail(data3)
+```
+  
+## The size of the group (descending order)  
+```{r, warning=FALSE, message=FALSE}
+data4 <- dataGit %>%
+  drop_na(cz_group, bet_habit) %>% 
+  group_by(cz_group) %>% 
+  summarise(Mean = round(mean(bet_habit), 2),
+            SD   = round(sd(bet_habit), 2),
+            N    = length(bet_habit)) %>% 
+  arrange(desc(N))
+
+head(data4)
+tail(data4)
+```
+
